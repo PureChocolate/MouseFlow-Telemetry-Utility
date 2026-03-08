@@ -1,0 +1,16 @@
+# Ignore Maven build output
+target/
+
+# Ignore IDE settings
+.settings/
+.classpath
+.project
+.vscode/
+.idea/
+
+# Ignore your logs (don't share your private mouse data!)
+logs/
+
+# OS junk
+.DS_Store
+Thumbs.db
