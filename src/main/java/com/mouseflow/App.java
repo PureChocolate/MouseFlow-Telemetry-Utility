@@ -15,6 +15,9 @@ import com.sun.jna.Native;
 import com.sun.jna.platform.win32.User32;
 import com.sun.jna.platform.win32.WinDef;
 import com.sun.jna.platform.win32.WinDef.HWND;
+
+import javafx.application.Platform;
+
 import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.io.IOException;
@@ -52,7 +55,12 @@ public class App implements NativeMouseMotionListener
         }
 
         scheduler = Executors.newSingleThreadScheduledExecutor();
-        scheduler.scheduleAtFixedRate(() -> logPulse(false), 0, 40, TimeUnit.MILLISECONDS);
+        scheduler.scheduleAtFixedRate(() -> {
+            logPulse(false);
+            Platform.runLater(() -> {
+                ui.updatePath(currentX,currentY);
+            });
+        }, 0, 40, TimeUnit.MILLISECONDS);
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             System.out.println("Closing..Save final data.");

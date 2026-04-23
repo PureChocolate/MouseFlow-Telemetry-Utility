@@ -3,7 +3,8 @@ package com.mouseflow;
 import java.util.ArrayDeque;
 
 import javafx.stage.Screen;
-import com.sun.javafx.scene.paint.GradientUtils.Point;
+
+import javafx.geometry.Point2D;
 
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -11,9 +12,12 @@ import javafx.geometry.Insets;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
+import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.OverrunStyle;
 import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 
 public class TrackerUI extends Application{
@@ -25,12 +29,19 @@ public class TrackerUI extends Application{
 
     private App engine;
 
-    private Canvas previewCanvas = new Canvas(200,200);
-    private ArrayDeque<Point> pathQueue = new ArrayDeque<>();
+    private Canvas pathCanvas = new Canvas(200,200);
+    private GraphicsContext gc;
+    private ArrayDeque<Point2D> pathQueue = new ArrayDeque<>();
     double minX,minY,totalW,totalH;
 
     @Override
     public void start(Stage stage){
+        focusLabel.setMaxWidth(380);
+        focusLabel.setTextOverrun(OverrunStyle.ELLIPSIS);
+
+        hoverLabel.setMaxWidth(380);
+        hoverLabel.setTextOverrun(OverrunStyle.ELLIPSIS);
+
         VBox sidebar = new VBox(20);
         sidebar.getStyleClass().add("sidebar");
         sidebar.setPrefWidth(200);
@@ -59,6 +70,7 @@ public class TrackerUI extends Application{
 
         VBox statusCard = new VBox(20);
         statusCard.getStyleClass().add("card");
+        statusCard.setMinWidth(500);
 
         Label title = new Label("Live Monitor");
         title.getStyleClass().add("title-label");
@@ -69,10 +81,20 @@ public class TrackerUI extends Application{
             createStatGroup("Y Position", yLabel)
         );
 
-        statusCard.getChildren().addAll(title, coords,
+        statusCard.getChildren().addAll(title);
+
+        VBox statsSide = new VBox();
+        statsSide.getChildren().addAll(coords,
             createStatGroup("Current Focus", focusLabel),
             createStatGroup("Under Mouse", hoverLabel)
         );
+        statsSide.setPrefWidth(400);
+        statsSide.setPrefHeight(400);
+
+        HBox cardContent = new HBox(40);
+        cardContent.getChildren().addAll(statsSide,pathCanvas);
+
+        statusCard.getChildren().addAll(cardContent);
         
         mainContent.getChildren().add(statusCard);
 
@@ -103,6 +125,9 @@ public class TrackerUI extends Application{
         this.totalW = maxX - minX;
         this.totalH = maxY - minY;
 
+        
+        this.gc = pathCanvas.getGraphicsContext2D();
+
         new Thread(()-> {
             App engine = new App(this);
             engine.startTracking();
@@ -124,6 +149,36 @@ public class TrackerUI extends Application{
             focusLabel.setText(focus);
             hoverLabel.setText(hover);
         });
+    }
+    private void renderPath(){
+        gc.clearRect(0, 0, pathCanvas.getWidth(),pathCanvas.getHeight());
+        gc.setFill(Color.rgb(255, 255, 255,0.1));
+        gc.fillRoundRect(0, 0, 200, 200, 15, 15);
+        gc.setStroke(Color.CYAN);
+        Point2D prev = null;
+        for(Point2D current: pathQueue){
+            if(prev != null){
+                gc.strokeLine(prev.getX(),prev.getY(),current.getX(),current.getY());
+            }
+            prev = current;
+        }
+        Point2D head = pathQueue.peekLast();
+        gc.fillOval(head.getX()-3, head.getY()-3,6,6);
+    }
+
+    public void updatePath(int x,int y){
+        double relativeX = x - minX;
+        double relativeY = y - minY;
+        double percentageX = relativeX / totalW;
+        double percentageY = relativeY / totalH;
+        Point2D nP = new Point2D(percentageX * pathCanvas.getWidth(), percentageY * pathCanvas.getHeight());
+        pathQueue.add(nP);
+
+        if(pathQueue.size() > 50){
+            pathQueue.removeFirst();
+        }
+
+        renderPath();
     }
 
     @Override
