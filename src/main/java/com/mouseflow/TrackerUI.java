@@ -29,7 +29,8 @@ public class TrackerUI extends Application{
 
     private App engine;
 
-    private Canvas pathCanvas = new Canvas(200,200);
+
+    private Canvas pathCanvas = new Canvas(300, 300);
     private GraphicsContext gc;
     private ArrayDeque<Point2D> pathQueue = new ArrayDeque<>();
     double minX,minY,totalW,totalH;
@@ -54,7 +55,6 @@ public class TrackerUI extends Application{
 
         Button stats = new Button("Stats");
         stats.getStyleClass().add("nav-button");
-
         Button settings = new Button("Settings");
         settings.getStyleClass().add("nav-button");
 
@@ -133,6 +133,23 @@ public class TrackerUI extends Application{
             engine.startTracking();
             this.engine = engine;
         }).start();
+
+        // Add event handlers for buttons
+        dashBtn.setOnAction(event -> {
+            root.setCenter(mainContent);
+        });
+
+        liveFeed.setOnAction(event -> {
+            root.setCenter(new Pane());
+        });
+
+        stats.setOnAction(event -> {
+            root.setCenter(new Pane());
+        });
+
+        settings.setOnAction(event -> {
+            root.setCenter(new Pane());
+        });
     }
 
     private VBox createStatGroup(String title, Label valueLabel){
